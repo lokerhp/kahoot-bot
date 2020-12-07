@@ -2,6 +2,7 @@ const Kahoot = require('kahoot.js-updated')
 var express = require('express')
   , bodyParser = require('body-parser');
 var app = express();
+var randomWords = require('random-words');
 
 app.use(bodyParser.json());
 
@@ -11,6 +12,20 @@ function createClient(i, name, gamePin) {
     console.log("Joining kahoot... " + i);
     var b = name;
     client.join(gamePin, b+i);
+    client.on("questionStart", question => {
+        console.log("A new question has started, answering the first answer.");
+        setTimeout(() => {
+            question.answer(Math.floor(Math.random()*4));
+        }, Math.random() * 4)
+    });
+    return client;
+} catch (e) {}
+}
+function createRandomClient(i, name, gamePin) {
+    try {
+    var client = new Kahoot;
+    console.log("Joining kahoot... " + i);
+    client.join(gamePin, randomWords());
     client.on("questionStart", question => {
         console.log("A new question has started, answering the first answer.");
         setTimeout(() => {
@@ -38,6 +53,23 @@ app.post('/start', (req, res) => {
         }
         setTimeout(() => {
             createClient(i+1, req.body.name,req.body.gamePin)
+    
+        }, (i*200))
+    }
+})
+app.post('/startrandom', (req, res) => {
+    if (!req.body.gamePin) return res.send("gamePin not defined")
+    if (!req.body.name) return res.send("name not defined")
+    if (!req.body.amount) return res.send("amount not defined")
+
+    if(!req.body.amount > 1000) return res.send("max 1000 bots")
+
+    for (let i=0;i<req.body.amount;i++) {
+        if(i+1>1000)  {
+            return;
+        }
+        setTimeout(() => {
+            createRandomClient(i+1, req.body.name,req.body.gamePin)
     
         }, (i*200))
     }
